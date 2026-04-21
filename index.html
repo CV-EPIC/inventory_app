@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CV EPIC Warehouse</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="/assets/logo.png" class="logo-img" alt="CV EPIC Warehouse">
+      <div class="logo-copy">
+        <p class="logo-tag">Inventory Control Suite</p>
+        <h1>CV EPIC Warehouse</h1>
+      </div>
+    </div>
+
+    <ul>
+      <li onclick="selectMenu(event,'penjualan')" class="active">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Penjualan</span>
+      </li>
+      <li onclick="selectMenu(event,'audit')">
+        <i data-lucide="clipboard-check"></i>
+        <span>Audit Stok</span>
+      </li>
+      <li onclick="selectMenu(event,'persediaan')">
+        <i data-lucide="boxes"></i>
+        <span>Persediaan</span>
+      </li>
+      <li onclick="selectMenu(event,'forecast')">
+        <i data-lucide="trending-up"></i>
+        <span>Forecasting</span>
+      </li>
+      <li onclick="selectMenu(event,'opname')">
+        <i data-lucide="package-check"></i>
+        <span>Stok Opname</span>
+      </li>
+    </ul>
+  </aside>
+
+  <main class="container">
+    <section class="header-card">
+      <div class="page-heading">
+        <p id="pageEyebrow">Sales Monitor</p>
+        <h2 id="pageTitle">Dashboard Penjualan</h2>
+        <span class="page-caption" id="pageCaption">Filter periode aktif akan langsung diterapkan ke menu yang sedang dibuka.</span>
+      </div>
+
+      <div class="header-actions">
+        <div class="filter-bar" id="pageFilters">
+          <label class="filter-control">
+            <span>Bulan</span>
+            <select id="bulan">
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Maret</option>
+              <option value="4">April</option>
+              <option value="5">Mei</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Agustus</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+          </label>
+
+          <label class="filter-control">
+            <span>Tahun</span>
+            <select id="tahun"></select>
+          </label>
+
+          <label class="filter-control filter-control-wide">
+            <span>Produk</span>
+            <input id="filterProduk" list="produkList" placeholder="Ketik SKU / nama produk">
+            <datalist id="produkList"></datalist>
+          </label>
+        </div>
+
+        <div class="header-tools">
+          <div class="filter-status" id="filterStatus">Periode aktif: -</div>
+          <button type="button" class="btn-secondary" onclick="clearProdukFilter()">Reset Produk</button>
+          <button type="button" class="btn-primary" onclick="printCurrentView()">Print</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="tab-menu" id="salesTabMenu">
+      <button onclick="showTab(event,'kpiTab')" class="active-tab">KPI</button>
+      <button onclick="showTab(event,'chartTab')">Grafik</button>
+      <button onclick="showTab(event,'inputTab')">Input</button>
+      <button onclick="showTab(event,'importTab')">Import</button>
+    </div>
+
+    <section id="kpiTab" class="tab-content">
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Sales Performance</p>
+            <h3>KPI Penjualan Warehouse</h3>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-box kpi-orange">
+            <p>Total Qty</p>
+            <h2 id="kpi_qty">0</h2>
+          </div>
+          <div class="kpi-box kpi-red">
+            <p>Total Penjualan</p>
+            <h2 id="kpi_nilai">Rp 0</h2>
+          </div>
+          <div class="kpi-box kpi-blue">
+            <p>Produk Terjual</p>
+            <h2 id="kpi_produk">0</h2>
+          </div>
+          <div class="kpi-box kpi-gray">
+            <p>Belum Terjual</p>
+            <h2 id="kpi_produk_belum">0</h2>
+          </div>
+          <div class="kpi-box kpi-green">
+            <p>Outlet Transaksi</p>
+            <h2 id="kpi_outlet">0</h2>
+          </div>
+          <div class="kpi-box kpi-yellow">
+            <p>Outlet Tidak Transaksi</p>
+            <h2 id="kpi_outlet_belum">0</h2>
+          </div>
+          <div class="kpi-box kpi-blue">
+            <p>Total Modal</p>
+            <h2 id="kpi_modal">Rp 0</h2>
+          </div>
+          <div class="kpi-box kpi-dark">
+            <p>Profit</p>
+            <h2 id="kpi_profit">Rp 0</h2>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="chartTab" class="tab-content" style="display:none;">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Grafik Penjualan Tahunan</h3>
+          <canvas id="chart"></canvas>
+        </div>
+        <div class="card">
+          <h3>Top 5 Produk Terlaris</h3>
+          <canvas id="chartTopProduk"></canvas>
+        </div>
+        <div class="card">
+          <h3>Top Outlet</h3>
+          <canvas id="chartTopOutlet"></canvas>
+        </div>
+        <div class="card">
+          <h3>Status Outlet</h3>
+          <canvas id="chartOutletStatus"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="inputTab" class="tab-content" style="display:none;">
+      <div class="card flex">
+        <div class="mini-sidebar">
+          <div onclick="selectInput(event,'penjualan')" class="active-mini">Penjualan</div>
+        </div>
+        <div class="mini-content" id="inputContent"></div>
+      </div>
+    </section>
+
+    <section id="importTab" class="tab-content" style="display:none;">
+      <div class="card flex">
+        <div class="mini-sidebar">
+          <div onclick="selectImport(event,'penjualan')" class="active-mini">Penjualan</div>
+        </div>
+        <div class="mini-content" id="importContent"></div>
+      </div>
+    </section>
+
+    <section id="persediaanTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Inventory Health</p>
+            <h3>Persediaan Warehouse</h3>
+          </div>
+          <div class="section-actions">
+            <button class="btn-secondary" onclick="exportCurrentModule()">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="subtab-menu" id="persediaanMenu">
+          <button onclick="showModuleTab(event,'persediaan','persediaanOverview')" class="active-tab">Ringkasan</button>
+          <button onclick="showModuleTab(event,'persediaan','persediaanStock')">Stok Produk</button>
+          <button onclick="showModuleTab(event,'persediaan','persediaanInputPane')">Input</button>
+          <button onclick="showModuleTab(event,'persediaan','persediaanImportPane')">Import</button>
+          <button onclick="showModuleTab(event,'persediaan','persediaanRestock')">Restock</button>
+        </div>
+
+        <div id="persediaanOverview" class="module-content">
+          <div class="kpi-grid">
+            <div class="kpi-box kpi-blue">
+              <p>Total SKU</p>
+              <h2 id="persediaan_total_sku">0</h2>
+            </div>
+            <div class="kpi-box kpi-green">
+              <p>Total Stok Akhir</p>
+              <h2 id="persediaan_total_stok">0</h2>
+            </div>
+            <div class="kpi-box kpi-yellow">
+              <p>SKU Perlu Restock</p>
+              <h2 id="persediaan_low_stock">0</h2>
+            </div>
+            <div class="kpi-box kpi-red">
+              <p>SKU Minus / Habis</p>
+              <h2 id="persediaan_out_stock">0</h2>
+            </div>
+          </div>
+        </div>
+
+        <div id="persediaanStock" class="module-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Nama Produk</th>
+                  <th>Opening</th>
+                  <th>Pembelian Bulan</th>
+                  <th>Keluar Gudang</th>
+                  <th>Penyesuaian</th>
+                  <th>Stok Akhir</th>
+                </tr>
+              </thead>
+              <tbody id="persediaanBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="persediaanInputPane" class="module-content" style="display:none;">
+          <div class="card inner-card flex">
+            <div class="mini-sidebar" id="persediaanInputMenu">
+              <div onclick="selectPersediaanInput(event,'pembelian')" class="active-mini">Pembelian</div>
+              <div onclick="selectPersediaanInput(event,'stok_awal')">Stok Awal</div>
+              <div onclick="selectPersediaanInput(event,'outlet')">Outlet</div>
+            </div>
+            <div class="mini-content" id="persediaanInputContent"></div>
+          </div>
+        </div>
+
+        <div id="persediaanImportPane" class="module-content" style="display:none;">
+          <div class="card inner-card flex">
+            <div class="mini-sidebar" id="persediaanImportMenu">
+              <div onclick="selectPersediaanImport(event,'pembelian')" class="active-mini">Pembelian</div>
+              <div onclick="selectPersediaanImport(event,'stok_awal')">Stok Awal</div>
+              <div onclick="selectPersediaanImport(event,'outlet')">Outlet</div>
+            </div>
+            <div class="mini-content" id="persediaanImportContent"></div>
+          </div>
+        </div>
+
+        <div id="persediaanRestock" class="module-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Nama Produk</th>
+                  <th>Stok Akhir</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="persediaanRestockBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="auditTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Outlet Stock Assurance</p>
+            <h3>Audit Stok Outlet</h3>
+          </div>
+          <div class="section-actions">
+            <button class="btn-secondary" onclick="exportCurrentModule()">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="subtab-menu" id="auditMenu">
+          <button onclick="showModuleTab(event,'audit','auditOverview')" class="active-tab">Ringkasan</button>
+          <button onclick="showModuleTab(event,'audit','auditOutletStock')">Stok Outlet</button>
+          <button onclick="showModuleTab(event,'audit','auditLog')">Mutasi</button>
+          <button onclick="showModuleTab(event,'audit','auditControl')">Kontrol</button>
+          <button onclick="showModuleTab(event,'audit','auditIntegration')">Sinkron API</button>
+        </div>
+
+        <div id="auditOverview" class="module-content">
+          <div class="kpi-grid">
+            <div class="kpi-box kpi-blue">
+              <p>Total Mutasi</p>
+              <h2 id="audit_total_log">0</h2>
+            </div>
+            <div class="kpi-box kpi-green">
+              <p>Stok Masuk Outlet</p>
+              <h2 id="audit_penjualan_total">0</h2>
+            </div>
+            <div class="kpi-box kpi-yellow">
+              <p>Penjualan Outlet</p>
+              <h2 id="audit_pembelian_total">0</h2>
+            </div>
+            <div class="kpi-box kpi-red">
+              <p>Qty Bergerak</p>
+              <h2 id="audit_qty_total">0</h2>
+            </div>
+          </div>
+          <div class="insight-grid top-space" id="auditInsightCards"></div>
+        </div>
+
+        <div id="auditOutletStock" class="module-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Outlet</th>
+                  <th>SKU</th>
+                  <th>Nama Produk</th>
+                  <th>Opening</th>
+                  <th>Masuk</th>
+                  <th>Keluar</th>
+                  <th>Penyesuaian</th>
+                  <th>Stok Akhir</th>
+                </tr>
+              </thead>
+              <tbody id="auditOutletBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="auditLog" class="module-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Sumber</th>
+                  <th>Jenis</th>
+                  <th>Outlet</th>
+                  <th>SKU</th>
+                  <th>Qty</th>
+                  <th>Referensi</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="auditControl" class="module-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Outlet</th>
+                  <th>SKU</th>
+                  <th>Flag</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="auditFlagBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="auditIntegration" class="module-content" style="display:none;">
+          <div class="insight-grid">
+            <div class="insight-card">
+              <h4>Status Integrasi</h4>
+              <p id="auditDbStatus">Mengecek struktur database audit outlet...</p>
+            </div>
+            <div class="insight-card">
+              <h4>Rancangan Tabel</h4>
+              <p>SQL proposal sudah disiapkan di file <code>db_audit_outlet_proposal.sql</code> dan sudah saya sinkronkan dengan struktur audit baru di aplikasi.</p>
+            </div>
+            <div class="insight-card">
+              <h4>Aturan Audit</h4>
+              <p>Penjualan warehouse diperlakukan sebagai stok masuk outlet. Penjualan outlet wajib dipisah agar stok outlet, selisih, dan indikasi kecurangan bisa terbaca dengan gamblang.</p>
+            </div>
+          </div>
+          <div class="note-panel top-space" id="auditIntegrationNotes"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="forecastTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Demand Planning</p>
+            <h3>Forecast Penjualan</h3>
+          </div>
+          <div class="section-actions">
+            <button class="btn-secondary" onclick="exportCurrentModule()">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="subtab-menu" id="forecastMenu">
+          <button onclick="showModuleTab(event,'forecast','forecastOverview')" class="active-tab">Ringkasan</button>
+          <button onclick="showModuleTab(event,'forecast','forecastList')">Forecast Produk</button>
+          <button onclick="showModuleTab(event,'forecast','forecastRecommendation')">Rekomendasi</button>
+        </div>
+
+        <div id="forecastOverview" class="module-content">
+          <div class="kpi-grid">
+            <div class="kpi-box kpi-blue">
+              <p>Total Produk</p>
+              <h2 id="forecast_total_produk">0</h2>
+            </div>
+            <div class="kpi-box kpi-green">
+              <p>Rata Forecast +10%</p>
+              <h2 id="forecast_avg_tahunan">0</h2>
+            </div>
+            <div class="kpi-box kpi-yellow">
+              <p>Top Demand</p>
+              <h2 id="forecast_top_demand">-</h2>
+            </div>
+            <div class="kpi-box kpi-red">
+              <p>Produk Aktif</p>
+              <h2 id="forecast_produk_aktif">0</h2>
+            </div>
+          </div>
+        </div>
+
+        <div id="forecastList" class="module-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Nama Produk</th>
+                  <th>Bulan -2</th>
+                  <th>Bulan -1</th>
+                  <th>Bulan Aktif</th>
+                  <th>EMA 3 Bulan</th>
+                  <th>Forecast +10%</th>
+                </tr>
+              </thead>
+              <tbody id="forecastBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="forecastRecommendation" class="module-content" style="display:none;">
+          <div class="insight-grid" id="forecastRecommendationCards"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="opnameTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="section-header opname-header">
+          <div>
+            <p class="section-eyebrow">Stock Control</p>
+            <h3>Stok Opname Gudang</h3>
+          </div>
+          <div class="opname-filter">
+            <label class="filter-control">
+              <span>Bulan</span>
+              <select id="opnameBulan">
+                <option value="1">Januari</option>
+                <option value="2">Februari</option>
+                <option value="3">Maret</option>
+                <option value="4">April</option>
+                <option value="5">Mei</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">Agustus</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+              </select>
+            </label>
+            <label class="filter-control">
+              <span>Tahun</span>
+              <select id="opnameTahun"></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="subtab-menu tab-menu-opname">
+          <button onclick="showOpnameTab(event,'opnameKPI')" class="active-tab">KPI</button>
+          <button onclick="showOpnameTab(event,'opnameInput')">Input SO</button>
+          <button onclick="showOpnameTab(event,'opnameHistory')">History</button>
+          <button onclick="showOpnameTab(event,'opnameImport')">Import</button>
+          <button onclick="showOpnameTab(event,'opnameExport')">Export</button>
+        </div>
+
+        <div id="opnameKPI" class="opname-content">
+          <div class="kpi-grid">
+            <div class="kpi-box kpi-blue">
+              <p>Total Produk</p>
+              <h2 id="kpi_opname_total">0</h2>
+            </div>
+            <div class="kpi-box kpi-green">
+              <p>Stok Sistem</p>
+              <h2 id="kpi_opname_sistem">0</h2>
+            </div>
+            <div class="kpi-box kpi-yellow">
+              <p>Stok Fisik</p>
+              <h2 id="kpi_opname_fisik">0</h2>
+            </div>
+            <div class="kpi-box kpi-red">
+              <p>Total Selisih</p>
+              <h2 id="kpi_opname_selisih">0</h2>
+            </div>
+            <div class="kpi-box kpi-dark">
+              <p>Item Selisih</p>
+              <h2 id="kpi_opname_problem">0</h2>
+            </div>
+          </div>
+        </div>
+
+        <div id="opnameInput" style="display:none;" class="opname-content">
+          <div class="opname-tools">
+            <input type="text" id="searchOpname" placeholder="Cari SKU / Nama Produk..." oninput="filterOpname()">
+            <select id="opnameCategoryFilter" onchange="filterOpname()">
+              <option value="all">Semua Kategori</option>
+              <option value="modul">Modul</option>
+              <option value="seragam">Seragam</option>
+              <option value="poster">Poster</option>
+              <option value="lain-lain">Lain-lain</option>
+            </select>
+          </div>
+
+          <div class="opname-print-panel">
+            <div class="print-meta-grid">
+              <input type="text" id="opnameChecker" placeholder="Nama Checker">
+              <input type="text" id="opnameGudang" placeholder="Nama Gudang / Lokasi">
+              <select id="opnamePrintCategory">
+                <option value="all">Print Semua Kategori</option>
+                <option value="modul">Print Modul</option>
+                <option value="seragam">Print Seragam</option>
+                <option value="poster">Print Poster</option>
+                <option value="lain-lain">Print Lain-lain</option>
+              </select>
+              <button onclick="printOpname()" class="btn-primary">Print PDF Opname</button>
+            </div>
+          </div>
+
+          <div class="opname-summary">
+            <div>Total Item: <b id="sum_total">0</b></div>
+            <div>Selisih: <b id="sum_selisih">0</b></div>
+            <div>Problem: <b id="sum_problem">0</b></div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="table opname-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Produk</th>
+                  <th>Kategori</th>
+                  <th>Sistem</th>
+                  <th>Fisik</th>
+                  <th>Selisih</th>
+                </tr>
+              </thead>
+              <tbody id="opnameBody"></tbody>
+            </table>
+          </div>
+
+          <button onclick="simpanOpname()" class="btn-primary top-space">Simpan Opname</button>
+        </div>
+
+        <div id="opnameHistory" class="opname-content" style="display:none;">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Total Item</th>
+                  <th>Total Selisih</th>
+                </tr>
+              </thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="opnameImport" class="opname-content" style="display:none;">
+          <h4>Import CSV Opname</h4>
+          <p>Gunakan format <code>sku,stok_fisik</code> agar stok fisik terisi otomatis ke tabel opname.</p>
+          <div class="section-actions">
+            <button class="btn-secondary" onclick="downloadOpnameTemplate()">Download Template</button>
+          </div>
+          <div class="top-space">
+            <input type="file" id="opnameImportFile" accept=".csv,text/csv">
+            <button onclick="previewOpnameImport()" class="btn-primary">Preview</button>
+          </div>
+          <div id="opnameImportPreview" class="top-space"></div>
+        </div>
+
+        <div id="opnameExport" class="opname-content" style="display:none;">
+          <h4>Export</h4>
+          <button class="btn-secondary" onclick="exportOpname()">Download CSV</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+
+  <div id="loader">
+    <div class="loader-content">
+      <img src="/assets/logo.png" class="loader-logo" alt="CV EPIC Warehouse">
+      <p>Memuat dashboard...</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/js/dashboard.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

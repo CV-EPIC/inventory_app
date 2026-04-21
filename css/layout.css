@@ -1,0 +1,64 @@
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  position: fixed;
+  background: #ffffff;
+  border-right: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.sidebar ul {
+  list-style: none;   /* 🔥 hilangkan titik */
+  padding: 0;
+  margin: 20px 0;
+}
+
+.sidebar li {
+  padding: 12px 20px;
+  margin: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #333;
+}
+
+.sidebar li:hover {
+  background: #f1f2f6;
+}
+
+.sidebar li.active {
+  background: #ff4d00;
+  color: white;
+}
+
+.logo {
+  text-align: center;
+  padding: 20px;
+}
+
+.logo-circle {
+  width: 60px;
+  height: 60px;
+  background: #ff4d00;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+
+.logo-circle img {
+  width: 70%;
+}
+
+.container {
+  margin-left: 240px;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
