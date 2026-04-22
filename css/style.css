@@ -437,6 +437,119 @@ button:hover {
   background: #fff0e8;
 }
 
+.sales-outlet-layout {
+  align-items: start;
+}
+
+.outlet-list-shell {
+  display: grid;
+  gap: 12px;
+  max-height: 640px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.outlet-list-empty {
+  padding: 18px;
+  border: 1px dashed #f0c8b8;
+  border-radius: 18px;
+  background: #fffaf7;
+  color: var(--muted);
+}
+
+.outlet-list-item {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #f3d8cc;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fff7f1 100%);
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(31, 41, 51, 0.05);
+}
+
+.outlet-list-item:hover {
+  border-color: #ffb199;
+  background: linear-gradient(180deg, #fffdfa 0%, #fff1e9 100%);
+}
+
+.outlet-list-item.active {
+  border-color: rgba(255, 90, 31, 0.34);
+  background: linear-gradient(135deg, rgba(255, 90, 31, 0.12), rgba(255, 255, 255, 0.95));
+  box-shadow: 0 14px 28px rgba(184, 92, 56, 0.12);
+}
+
+.outlet-list-head,
+.outlet-list-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.outlet-list-name {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.outlet-list-meta {
+  flex-wrap: wrap;
+}
+
+.outlet-stat {
+  min-width: 120px;
+}
+
+.outlet-stat-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.outlet-stat-value {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.outlet-list-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.outlet-detail-hero {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #f3d8cc;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fffaf7 0%, #fff0e8 100%);
+}
+
+.outlet-detail-hero__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.outlet-detail-hero__status strong {
+  font-size: 18px;
+}
+
+.outlet-detail-hero p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -680,5 +793,16 @@ code {
   .mini-sidebar {
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .outlet-list-head,
+  .outlet-list-meta,
+  .outlet-detail-hero__status {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .outlet-stat {
+    min-width: 0;
   }
 }

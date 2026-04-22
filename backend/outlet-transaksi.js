@@ -30,13 +30,13 @@ export default async function handler(req, res) {
             make_date($2::int, $1::int, 1) AS start_date,
             (make_date($2::int, $1::int, 1) + interval '1 month')::date AS end_date
         ),
-        sales_month AS (
-          SELECT outlet_id, COALESCE(SUM(qty), 0) AS qty_transaksi
-          FROM outlet_penjualan
+        warehouse_sales_month AS (
+          SELECT nama_outlet, COALESCE(SUM(qty), 0) AS qty_transaksi
+          FROM penjualan
           WHERE tanggal >= (SELECT start_date FROM params)
             AND tanggal < (SELECT end_date FROM params)
             AND ($3::text = '' OR sku = $3)
-          GROUP BY outlet_id
+          GROUP BY nama_outlet
         ),
         opening AS (
           SELECT outlet_id, COALESCE(SUM(qty_awal), 0) AS opening_stok
@@ -73,10 +73,10 @@ export default async function handler(req, res) {
           SELECT
             o.id AS outlet_id,
             o.nama_outlet,
-            COALESCE(sm.qty_transaksi, 0) AS qty_transaksi,
+            COALESCE(ws.qty_transaksi, 0) AS qty_transaksi,
             COALESCE(op.opening_stok, 0) + COALESCE(ms.stok_masuk, 0) - COALESCE(kl.stok_keluar, 0) + COALESCE(ad.penyesuaian, 0) AS stok_akhir
           FROM outlet o
-          LEFT JOIN sales_month sm ON sm.outlet_id = o.id
+          LEFT JOIN warehouse_sales_month ws ON ws.nama_outlet = o.nama_outlet
           LEFT JOIN opening op ON op.outlet_id = o.id
           LEFT JOIN masuk ms ON ms.outlet_id = o.id
           LEFT JOIN keluar kl ON kl.outlet_id = o.id
@@ -100,8 +100,33 @@ export default async function handler(req, res) {
           nama_outlet
       `, [bulan, tahun, sku || "", status || ""]);
 
+      const totalsResult = await pool.query(`
+        WITH params AS (
+          SELECT
+            make_date($2::int, $1::int, 1) AS start_date,
+            (make_date($2::int, $1::int, 1) + interval '1 month')::date AS end_date
+        ),
+        warehouse_sales_month AS (
+          SELECT DISTINCT nama_outlet
+          FROM penjualan
+          WHERE tanggal >= (SELECT start_date FROM params)
+            AND tanggal < (SELECT end_date FROM params)
+            AND ($3::text = '' OR sku = $3)
+        )
+        SELECT
+          (SELECT COUNT(*) FROM warehouse_sales_month) AS sudah,
+          (
+            SELECT COUNT(*)
+            FROM outlet
+            WHERE nama_outlet NOT IN (SELECT nama_outlet FROM warehouse_sales_month)
+          ) AS belum
+      `, [bulan, tahun, sku || ""]);
+
       let detail = [];
       let selectedOutlet = outlet || summaryResult.rows[0]?.nama_outlet || "";
+      if (selectedOutlet && !summaryResult.rows.some(item => item.nama_outlet === selectedOutlet)) {
+        selectedOutlet = summaryResult.rows[0]?.nama_outlet || "";
+      }
 
       if (selectedOutlet) {
         const detailResult = await pool.query(`
@@ -183,6 +208,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         db_ready: true,
         outlets: summaryResult.rows,
+        totals: totalsResult.rows[0],
         selected_outlet: selectedOutlet,
         detail
       });
@@ -227,8 +253,33 @@ export default async function handler(req, res) {
       ORDER BY CASE WHEN COALESCE(sm.qty_transaksi, 0) > 0 THEN 0 ELSE 1 END, o.nama_outlet
     `, [bulan, tahun, sku || "", status || ""]);
 
+    const totalsResult = await pool.query(`
+      WITH params AS (
+        SELECT
+          make_date($2::int, $1::int, 1) AS start_date,
+          (make_date($2::int, $1::int, 1) + interval '1 month')::date AS end_date
+      ),
+      sales_month AS (
+        SELECT DISTINCT nama_outlet
+        FROM penjualan
+        WHERE tanggal >= (SELECT start_date FROM params)
+          AND tanggal < (SELECT end_date FROM params)
+          AND ($3::text = '' OR sku = $3)
+      )
+      SELECT
+        (SELECT COUNT(*) FROM sales_month) AS sudah,
+        (
+          SELECT COUNT(*)
+          FROM outlet
+          WHERE nama_outlet NOT IN (SELECT nama_outlet FROM sales_month)
+        ) AS belum
+    `, [bulan, tahun, sku || ""]);
+
     let detail = [];
-    const selectedOutlet = outlet || summaryResult.rows[0]?.nama_outlet || "";
+    let selectedOutlet = outlet || summaryResult.rows[0]?.nama_outlet || "";
+    if (selectedOutlet && !summaryResult.rows.some(item => item.nama_outlet === selectedOutlet)) {
+      selectedOutlet = summaryResult.rows[0]?.nama_outlet || "";
+    }
     if (selectedOutlet) {
       const detailResult = await pool.query(`
         WITH params AS (
@@ -273,6 +324,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       db_ready: false,
       outlets: summaryResult.rows,
+      totals: totalsResult.rows[0],
       selected_outlet: selectedOutlet,
       detail
     });

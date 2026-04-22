@@ -202,22 +202,16 @@
           </div>
         </div>
 
-        <div class="grid-2 top-space">
+        <div class="grid-2 top-space sales-outlet-layout">
           <div class="card inner-card">
-            <div class="table-shell">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Outlet</th>
-                    <th>Status</th>
-                    <th>Qty Transaksi</th>
-                    <th>Stok Outlet</th>
-                    <th>Catatan</th>
-                  </tr>
-                </thead>
-                <tbody id="outletTransactionBody"></tbody>
-              </table>
+            <div class="section-header detail-header">
+              <div>
+                <p class="section-eyebrow">Daftar Outlet</p>
+                <h3>Monitoring Outlet</h3>
+              </div>
             </div>
+            <p class="page-caption">Daftar dibuat lebih ringkas. Klik nama outlet untuk membuka rincian transaksi dan stok pada periode aktif.</p>
+            <div class="outlet-list-shell" id="outletTransactionBody"></div>
           </div>
 
           <div class="card inner-card">
@@ -227,12 +221,29 @@
                 <h3 id="outletDetailTitle">Pilih outlet</h3>
               </div>
             </div>
+            <div class="outlet-detail-hero" id="outletDetailHero">
+              <div class="outlet-detail-hero__status">
+                <span id="outletDetailStatusBadge" class="status-badge status-low">Menunggu</span>
+                <strong id="outletDetailStatusText">Belum ada outlet dipilih</strong>
+              </div>
+              <p id="outletDetailStatusNote">Klik salah satu nama outlet di panel kiri untuk melihat rincian lengkapnya.</p>
+            </div>
             <div class="note-panel" id="outletDetailSummary">
               <h4>Belum ada outlet dipilih</h4>
               <p>Klik salah satu outlet untuk melihat detail stok dan alasan kenapa outlet tersebut sudah atau belum transaksi pada periode ini.</p>
             </div>
+            <div class="kpi-grid top-space sales-detail-kpis">
+              <div class="kpi-box kpi-green">
+                <p>Qty Transaksi Outlet</p>
+                <h2 id="outletDetailQty">0</h2>
+              </div>
+              <div class="kpi-box kpi-blue">
+                <p>Total Stok Outlet</p>
+                <h2 id="outletDetailStock">0</h2>
+              </div>
+            </div>
             <div class="table-shell top-space">
-              <table class="table">
+              <table class="table table-compact">
                 <thead>
                   <tr>
                     <th>SKU</th>

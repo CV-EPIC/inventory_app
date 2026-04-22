@@ -478,13 +478,14 @@ async function loadOutletTransactionMonitor(showSpinner = true) {
     state.outletTransactions = toObject(await fetchJson(`/api/outlet-transaksi?${qs.toString()}`));
     const outlets = toArray(state.outletTransactions.outlets);
     const detail = toArray(state.outletTransactions.detail);
+    const totals = toObject(state.outletTransactions.totals);
     const selectedOutlet = state.outletTransactions.selected_outlet || selectedSalesOutlet || "";
     selectedSalesOutlet = selectedOutlet;
 
-    const doneCount = outlets.filter(item => item.status_transaksi === "sudah").length;
-    const pendingCount = outlets.filter(item => item.status_transaksi === "belum").length;
     const selectedRow = outlets.find(item => item.nama_outlet === selectedOutlet);
     const selectedStock = detail.reduce((sum, item) => sum + Number(item.stok_akhir || 0), 0);
+    const doneCount = Number(totals.sudah ?? 0);
+    const pendingCount = Number(totals.belum ?? 0);
 
     setText("sales_outlet_done", formatNumber(doneCount));
     setText("sales_outlet_pending", formatNumber(pendingCount));
@@ -504,49 +505,83 @@ async function loadOutletTransactionMonitor(showSpinner = true) {
 function renderOutletTransactionTable(outlets, selectedOutlet) {
   const body = document.getElementById("outletTransactionBody");
   if (!body) return;
-  body.innerHTML = "";
 
   if (!outlets.length) {
-    body.innerHTML = `<tr><td colspan="5">Tidak ada data outlet untuk periode ini.</td></tr>`;
+    body.innerHTML = `<div class="outlet-list-empty">Tidak ada data outlet untuk periode ini.</div>`;
     return;
   }
 
-  outlets.forEach(item => {
+  body.innerHTML = outlets.map(item => {
     const statusClass = item.status_transaksi === "sudah" ? "status-safe" : "status-out";
-    const isActive = item.nama_outlet === selectedOutlet ? "row-selected" : "";
-    body.innerHTML += `
-      <tr class="${isActive}" onclick="selectSalesOutlet('${escapeHtml(item.nama_outlet)}')">
-        <td>${escapeHtml(item.nama_outlet)}</td>
-        <td><span class="status-badge ${statusClass}">${item.status_transaksi === "sudah" ? "Sudah" : "Belum"}</span></td>
-        <td>${formatNumber(item.qty_transaksi)}</td>
-        <td>${formatNumber(item.stok_akhir)}</td>
-        <td>${escapeHtml(item.catatan || "-")}</td>
-      </tr>
+    const statusLabel = item.status_transaksi === "sudah" ? "Sudah Transaksi" : "Belum Transaksi";
+    const isActive = item.nama_outlet === selectedOutlet ? "active" : "";
+    return `
+      <button
+        type="button"
+        class="outlet-list-item ${isActive}"
+        data-outlet="${escapeHtml(item.nama_outlet)}"
+        onclick="selectSalesOutlet(this.dataset.outlet)"
+      >
+        <div class="outlet-list-head">
+          <h4 class="outlet-list-name">${escapeHtml(item.nama_outlet)}</h4>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        <div class="outlet-list-meta">
+          <div class="outlet-stat">
+            <span class="outlet-stat-label">Qty Transaksi</span>
+            <span class="outlet-stat-value">${formatNumber(item.qty_transaksi)}</span>
+          </div>
+          <div class="outlet-stat">
+            <span class="outlet-stat-label">Stok Outlet</span>
+            <span class="outlet-stat-value">${formatNumber(item.stok_akhir)}</span>
+          </div>
+        </div>
+        <p class="outlet-list-note">${escapeHtml(item.catatan || "-")}</p>
+      </button>
     `;
-  });
+  }).join("");
 }
 
 function renderOutletTransactionDetail(detail, selectedRow) {
   const title = document.getElementById("outletDetailTitle");
   const summary = document.getElementById("outletDetailSummary");
   const body = document.getElementById("outletTransactionDetailBody");
-  if (!title || !summary || !body) return;
+  const heroBadge = document.getElementById("outletDetailStatusBadge");
+  const heroText = document.getElementById("outletDetailStatusText");
+  const heroNote = document.getElementById("outletDetailStatusNote");
+  if (!title || !summary || !body || !heroBadge || !heroText || !heroNote) return;
 
   if (!selectedRow) {
     title.textContent = "Pilih outlet";
+    heroBadge.className = "status-badge status-low";
+    heroBadge.textContent = "Menunggu";
+    heroText.textContent = "Belum ada outlet dipilih";
+    heroNote.textContent = "Klik salah satu nama outlet di panel kiri untuk melihat rincian lengkapnya.";
     summary.innerHTML = `
       <h4>Belum ada outlet dipilih</h4>
       <p>Klik salah satu outlet untuk melihat detail stok dan alasan kenapa outlet tersebut sudah atau belum transaksi pada periode ini.</p>
     `;
     body.innerHTML = `<tr><td colspan="8">Belum ada detail outlet dipilih.</td></tr>`;
+    setText("outletDetailQty", "0");
+    setText("outletDetailStock", "0");
     return;
   }
 
+  const isDone = selectedRow.status_transaksi === "sudah";
+  const detailQty = Number(selectedRow.qty_transaksi || 0);
+  const detailStock = detail.reduce((sum, item) => sum + Number(item.stok_akhir || 0), 0);
+
   title.textContent = selectedRow.nama_outlet;
+  heroBadge.className = `status-badge ${isDone ? "status-safe" : "status-out"}`;
+  heroBadge.textContent = isDone ? "Sudah Transaksi" : "Belum Transaksi";
+  heroText.textContent = `${formatNumber(detailQty)} qty transaksi pada periode aktif`;
+  heroNote.textContent = selectedRow.catatan || "-";
   summary.innerHTML = `
-    <h4>Status ${selectedRow.status_transaksi === "sudah" ? "Sudah Transaksi" : "Belum Transaksi"}</h4>
+    <h4>Status ${isDone ? "Sudah Transaksi" : "Belum Transaksi"}</h4>
     <p>${escapeHtml(selectedRow.catatan || "-")}</p>
   `;
+  setText("outletDetailQty", formatNumber(detailQty));
+  setText("outletDetailStock", formatNumber(detailStock));
 
   body.innerHTML = "";
   if (!detail.length) {
