@@ -6,6 +6,7 @@ let currentMenu = "penjualan";
 
 const state = {
   produkOptions: [],
+  auditOutlets: [],
   persediaan: [],
   forecast: [],
   audit: {
@@ -57,6 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectPersediaanInput(null, "pembelian");
   selectPersediaanImport(null, "pembelian");
   await loadProdukOptions();
+  await loadAuditOutletOptions();
   selectMenu(null, "penjualan");
 });
 
@@ -119,6 +121,10 @@ function getProdukFilter() {
   return (document.getElementById("filterProduk")?.value || "").trim();
 }
 
+function getAuditOutletFilter() {
+  return (document.getElementById("auditOutletFilter")?.value || "").trim();
+}
+
 function getSelectedSku() {
   const raw = getProdukFilter();
   if (!raw) return "";
@@ -153,7 +159,8 @@ function getBulanLabel(bulan = getBulan()) {
 
 function updateFilterStatus() {
   const produk = getSelectedSku();
-  const text = `Periode aktif: ${getBulanLabel()} ${getTahun()}${produk ? ` | Produk: ${produk}` : " | Produk: Semua"}`;
+  const outlet = currentMenu === "audit" ? getAuditOutletFilter() : "";
+  const text = `Periode aktif: ${getBulanLabel()} ${getTahun()}${produk ? ` | Produk: ${produk}` : " | Produk: Semua"}${outlet ? ` | Outlet: ${outlet}` : ""}`;
   setText("filterStatus", text);
 }
 
@@ -275,6 +282,22 @@ async function loadProdukOptions() {
       .join("");
   } catch (error) {
     console.error("Produk list error:", error);
+  }
+}
+
+async function loadAuditOutletOptions() {
+  try {
+    state.auditOutlets = toArray(await fetchJson("/api/outlet-list"));
+    const select = document.getElementById("auditOutletFilter");
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = `<option value="">Semua Outlet</option>${state.auditOutlets
+      .map(item => `<option value="${escapeHtml(item.nama_outlet)}">${escapeHtml(item.nama_outlet)}</option>`)
+      .join("")}`;
+    select.value = currentValue;
+  } catch (error) {
+    console.error("Audit outlet list error:", error);
   }
 }
 
@@ -854,7 +877,10 @@ async function loadPersediaan() {
 async function loadAudit() {
   showLoader();
   try {
-    state.audit = toObject(await fetchJson(`/api/audit?${getQueryParams().toString()}`));
+    const qs = getQueryParams();
+    const outlet = getAuditOutletFilter();
+    if (outlet) qs.set("outlet", outlet);
+    state.audit = toObject(await fetchJson(`/api/audit?${qs.toString()}`));
     const summary = toObject(state.audit.summary);
     const movements = toArray(state.audit.movements);
     const outletSummary = toArray(state.audit.outlet_summary);
@@ -1330,9 +1356,6 @@ function printOpname() {
   const tableRows = rows.map((row, index) => {
     const sku = row.children[0].textContent.trim();
     const sistem = row.children[3].textContent.trim();
-    const input = document.getElementById(`fisik-${sku}`);
-    const fisik = input?.value === "" ? sistem : input?.value || "0";
-    const selisih = Number(String(fisik).replace(/\./g, "").replace(/,/g, "")) - Number(String(sistem).replace(/\./g, "").replace(/,/g, ""));
 
     return [
       index + 1,
@@ -1340,8 +1363,8 @@ function printOpname() {
       row.children[1].textContent.trim(),
       row.children[2].textContent.trim(),
       sistem,
-      fisik,
-      selisih
+      "",
+      ""
     ];
   });
 

@@ -12,6 +12,7 @@ import importStokAwalHandler from "../backend/import-stok_awal.js";
 import kpiHandler from "../backend/kpi.js";
 import opnameHistoryHandler from "../backend/opname-history.js";
 import outletStatusHandler from "../backend/outlet-status.js";
+import outletListHandler from "../backend/outlet-list.js";
 import persediaanHandler from "../backend/persediaan.js";
 import produkListHandler from "../backend/produk-list.js";
 import simpanOpnameHandler from "../backend/simpan-opname.js";
@@ -29,6 +30,7 @@ const routes = {
   "GET /top-produk": topProdukHandler,
   "GET /top-outlet": topOutletHandler,
   "GET /outlet-status": outletStatusHandler,
+  "GET /outlet-list": outletListHandler,
   "GET /template-outlet": templateOutletHandler,
   "GET /template-penjualan": templatePenjualanHandler,
   "GET /template-pembelian": templatePembelianHandler,

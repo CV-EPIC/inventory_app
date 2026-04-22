@@ -289,6 +289,12 @@
             <h3>Audit Stok Outlet</h3>
           </div>
           <div class="section-actions">
+            <label class="filter-control audit-filter-control">
+              <span>Outlet</span>
+              <select id="auditOutletFilter" onchange="applyCurrentFilters()">
+                <option value="">Semua Outlet</option>
+              </select>
+            </label>
             <button class="btn-secondary" onclick="exportCurrentModule()">Export CSV</button>
           </div>
         </div>

@@ -55,6 +55,17 @@ export default async function handler(req, res) {
             + 0.25 * COALESCE(bulan_1, 0)
           )::numeric, 2) AS ema_3_bulan
         FROM pivoted
+      ),
+      forecast_calc AS (
+        SELECT
+          sku,
+          nama_produk,
+          bulan_1,
+          bulan_2,
+          bulan_3,
+          ema_3_bulan,
+          CEIL(ema_3_bulan * 1.10)::int AS forecast_raw
+        FROM ema_calc
       )
       SELECT
         sku,
@@ -63,8 +74,11 @@ export default async function handler(req, res) {
         bulan_2,
         bulan_3,
         ema_3_bulan,
-        CEIL(ema_3_bulan * 1.10)::int AS forecast_bulan_depan
-      FROM ema_calc
+        CASE
+          WHEN forecast_raw >= 100 THEN (ROUND(forecast_raw::numeric / 50) * 50)::int
+          ELSE forecast_raw
+        END AS forecast_bulan_depan
+      FROM forecast_calc
       ORDER BY nama_produk
     `, [bulan, tahun, sku]);
 

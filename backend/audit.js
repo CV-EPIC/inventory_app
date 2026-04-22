@@ -15,7 +15,7 @@ async function getTableAvailability() {
 
 export default async function handler(req, res) {
   try {
-    const { bulan, tahun, sku } = req.query;
+    const { bulan, tahun, sku, outlet } = req.query;
     const availability = await getTableAvailability();
     const dbReady = Boolean(
       availability?.has_outlet_stok_awal
@@ -38,18 +38,21 @@ export default async function handler(req, res) {
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR sku = $3)
+              AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
             UNION ALL
             SELECT tanggal, qty, 'outlet_sales' AS jenis
             FROM outlet_penjualan
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR sku = $3)
+              AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
             UNION ALL
             SELECT tanggal, ABS(qty) AS qty, 'adjustment' AS jenis
             FROM outlet_stok_penyesuaian
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR sku = $3)
+              AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
           )
           SELECT
             COUNT(*) AS total_mutasi,
@@ -62,14 +65,16 @@ export default async function handler(req, res) {
                 SELECT outlet_id FROM outlet_stok_masuk
                 WHERE tanggal >= (SELECT start_date FROM params)
                   AND tanggal < (SELECT end_date FROM params)
+                  AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
                 UNION
                 SELECT outlet_id FROM outlet_penjualan
                 WHERE tanggal >= (SELECT start_date FROM params)
                   AND tanggal < (SELECT end_date FROM params)
+                  AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
               ) outlets
             ) AS total_outlet
           FROM movement_union
-        `, [bulan, tahun, sku || ""]),
+        `, [bulan, tahun, sku || "", outlet || ""]),
         pool.query(`
           WITH params AS (
             SELECT make_date($2::int, $1::int, 1) AS start_date
@@ -127,8 +132,9 @@ export default async function handler(req, res) {
           LEFT JOIN stok_keluar klr ON klr.outlet_id = k.outlet_id AND klr.sku = k.sku
           LEFT JOIN penyesuaian adj ON adj.outlet_id = k.outlet_id AND adj.sku = k.sku
           WHERE ($3::text = '' OR p.sku = $3)
+            AND ($4::text = '' OR o.nama_outlet = $4)
           ORDER BY o.nama_outlet, p.nama_produk
-        `, [bulan, tahun, sku || ""]),
+        `, [bulan, tahun, sku || "", outlet || ""]),
         pool.query(`
           WITH params AS (
             SELECT
@@ -151,6 +157,7 @@ export default async function handler(req, res) {
             WHERE m.tanggal >= (SELECT start_date FROM params)
               AND m.tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR m.sku = $3)
+              AND ($4::text = '' OR o.nama_outlet = $4)
 
             UNION ALL
 
@@ -168,6 +175,7 @@ export default async function handler(req, res) {
             WHERE s.tanggal >= (SELECT start_date FROM params)
               AND s.tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR s.sku = $3)
+              AND ($4::text = '' OR o.nama_outlet = $4)
 
             UNION ALL
 
@@ -185,10 +193,11 @@ export default async function handler(req, res) {
             WHERE a.tanggal >= (SELECT start_date FROM params)
               AND a.tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR a.sku = $3)
+              AND ($4::text = '' OR o.nama_outlet = $4)
           ) movement_log
           ORDER BY tanggal DESC, nama_outlet
           LIMIT 300
-        `, [bulan, tahun, sku || ""]),
+        `, [bulan, tahun, sku || "", outlet || ""]),
         pool.query(`
           WITH params AS (
             SELECT make_date($2::int, $1::int, 1) AS start_date
@@ -233,6 +242,7 @@ export default async function handler(req, res) {
               GROUP BY outlet_id, sku
             ) ad ON ad.outlet_id = o.id AND ad.sku = p.sku
             WHERE ($3::text = '' OR p.sku = $3)
+              AND ($4::text = '' OR o.nama_outlet = $4)
           )
           SELECT nama_outlet, sku,
             CASE
@@ -248,7 +258,7 @@ export default async function handler(req, res) {
           FROM stock_data
           WHERE (stok_akhir < 0 OR (stok_keluar = 0 AND stok_masuk > 0) OR ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10))
           ORDER BY nama_outlet, sku
-        `, [bulan, tahun, sku || ""])
+        `, [bulan, tahun, sku || "", outlet || ""])
       ]);
 
       return res.status(200).json({
@@ -279,12 +289,14 @@ export default async function handler(req, res) {
           WHERE tanggal >= (SELECT start_date FROM params)
             AND tanggal < (SELECT end_date FROM params)
             AND ($3::text = '' OR sku = $3)
+            AND ($4::text = '' OR nama_outlet = $4)
           UNION ALL
           SELECT tanggal, qty, 'warehouse_purchase' AS jenis
           FROM pembelian
           WHERE tanggal >= (SELECT start_date FROM params)
             AND tanggal < (SELECT end_date FROM params)
             AND ($3::text = '' OR sku = $3)
+            AND $4::text = ''
         )
         SELECT
           COUNT(*) AS total_mutasi,
@@ -294,9 +306,10 @@ export default async function handler(req, res) {
           (SELECT COUNT(DISTINCT nama_outlet) FROM penjualan
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
+              AND ($4::text = '' OR nama_outlet = $4)
           ) AS total_outlet
         FROM movement_union
-      `, [bulan, tahun, sku || ""]),
+      `, [bulan, tahun, sku || "", outlet || ""]),
       pool.query(`
         WITH params AS (
           SELECT
@@ -307,6 +320,7 @@ export default async function handler(req, res) {
           SELECT nama_outlet, sku, COALESCE(SUM(qty), 0) AS qty
           FROM penjualan
           WHERE tanggal < (SELECT start_date FROM params)
+            AND ($4::text = '' OR nama_outlet = $4)
           GROUP BY nama_outlet, sku
         ),
         transfer_month AS (
@@ -314,6 +328,7 @@ export default async function handler(req, res) {
           FROM penjualan
           WHERE tanggal >= (SELECT start_date FROM params)
             AND tanggal < (SELECT end_date FROM params)
+            AND ($4::text = '' OR nama_outlet = $4)
           GROUP BY nama_outlet, sku
         ),
         keys AS (
@@ -335,8 +350,9 @@ export default async function handler(req, res) {
         LEFT JOIN transfer_before tb ON tb.nama_outlet = k.nama_outlet AND tb.sku = k.sku
         LEFT JOIN transfer_month tm ON tm.nama_outlet = k.nama_outlet AND tm.sku = k.sku
         WHERE ($3::text = '' OR p.sku = $3)
+          AND ($4::text = '' OR k.nama_outlet = $4)
         ORDER BY k.nama_outlet, p.nama_produk
-      `, [bulan, tahun, sku || ""]),
+      `, [bulan, tahun, sku || "", outlet || ""]),
       pool.query(`
         WITH params AS (
           SELECT
@@ -358,6 +374,7 @@ export default async function handler(req, res) {
           WHERE tanggal >= (SELECT start_date FROM params)
             AND tanggal < (SELECT end_date FROM params)
             AND ($3::text = '' OR sku = $3)
+            AND ($4::text = '' OR nama_outlet = $4)
 
           UNION ALL
 
@@ -374,10 +391,11 @@ export default async function handler(req, res) {
           WHERE tanggal >= (SELECT start_date FROM params)
             AND tanggal < (SELECT end_date FROM params)
             AND ($3::text = '' OR sku = $3)
+            AND $4::text = ''
         ) movement_log
         ORDER BY tanggal DESC
         LIMIT 300
-      `, [bulan, tahun, sku || ""])
+      `, [bulan, tahun, sku || "", outlet || ""])
     ]);
 
     const flags = outletResult.rows

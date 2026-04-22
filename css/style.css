@@ -197,6 +197,10 @@ select {
   grid-column: span 1;
 }
 
+.audit-filter-control {
+  min-width: 220px;
+}
+
 input,
 select {
   width: 100%;
