@@ -92,6 +92,7 @@
     <div class="tab-menu" id="salesTabMenu">
       <button onclick="showTab(event,'kpiTab')" class="active-tab">KPI</button>
       <button onclick="showTab(event,'chartTab')">Grafik</button>
+      <button onclick="showTab(event,'outletTransactionTab')">Transaksi Outlet</button>
       <button onclick="showTab(event,'inputTab')">Input</button>
       <button onclick="showTab(event,'importTab')">Import</button>
     </div>
@@ -159,6 +160,95 @@
         <div class="card">
           <h3>Status Outlet</h3>
           <canvas id="chartOutletStatus"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="outletTransactionTab" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Outlet Monitoring</p>
+            <h3>Status Transaksi Outlet</h3>
+          </div>
+          <div class="section-actions">
+            <label class="filter-control audit-filter-control">
+              <span>Status</span>
+              <select id="outletTransactionStatus" onchange="loadOutletTransactionMonitor()">
+                <option value="">Semua</option>
+                <option value="sudah">Sudah Transaksi</option>
+                <option value="belum">Belum Transaksi</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-box kpi-green">
+            <p>Outlet Sudah Transaksi</p>
+            <h2 id="sales_outlet_done">0</h2>
+          </div>
+          <div class="kpi-box kpi-red">
+            <p>Outlet Belum Transaksi</p>
+            <h2 id="sales_outlet_pending">0</h2>
+          </div>
+          <div class="kpi-box kpi-yellow">
+            <p>Outlet Dipilih</p>
+            <h2 id="sales_outlet_selected">-</h2>
+          </div>
+          <div class="kpi-box kpi-blue">
+            <p>Stok Outlet Dipilih</p>
+            <h2 id="sales_outlet_stock">0</h2>
+          </div>
+        </div>
+
+        <div class="grid-2 top-space">
+          <div class="card inner-card">
+            <div class="table-shell">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Outlet</th>
+                    <th>Status</th>
+                    <th>Qty Transaksi</th>
+                    <th>Stok Outlet</th>
+                    <th>Catatan</th>
+                  </tr>
+                </thead>
+                <tbody id="outletTransactionBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card inner-card">
+            <div class="section-header detail-header">
+              <div>
+                <p class="section-eyebrow">Outlet Detail</p>
+                <h3 id="outletDetailTitle">Pilih outlet</h3>
+              </div>
+            </div>
+            <div class="note-panel" id="outletDetailSummary">
+              <h4>Belum ada outlet dipilih</h4>
+              <p>Klik salah satu outlet untuk melihat detail stok dan alasan kenapa outlet tersebut sudah atau belum transaksi pada periode ini.</p>
+            </div>
+            <div class="table-shell top-space">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Nama Produk</th>
+                    <th>Opening</th>
+                    <th>Masuk</th>
+                    <th>Keluar</th>
+                    <th>Penyesuaian</th>
+                    <th>Stok Akhir</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="outletTransactionDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </section>

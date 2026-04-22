@@ -3,10 +3,16 @@ let chartTopProduk = null;
 let chartTopOutlet = null;
 let chartOutletStatus = null;
 let currentMenu = "penjualan";
+let selectedSalesOutlet = "";
 
 const state = {
   produkOptions: [],
   auditOutlets: [],
+  outletTransactions: {
+    outlets: [],
+    detail: [],
+    selected_outlet: ""
+  },
   persediaan: [],
   forecast: [],
   audit: {
@@ -313,7 +319,7 @@ function getQueryParams(includeProduct = true) {
 }
 
 function showTab(event, id) {
-  document.querySelectorAll("#kpiTab, #chartTab, #inputTab, #importTab")
+  document.querySelectorAll("#kpiTab, #chartTab, #outletTransactionTab, #inputTab, #importTab")
     .forEach(tab => { tab.style.display = "none"; });
 
   document.querySelectorAll("#salesTabMenu button")
@@ -324,6 +330,7 @@ function showTab(event, id) {
   if (event) event.target.classList.add("active-tab");
 
   if (id === "chartTab") loadChart();
+  if (id === "outletTransactionTab") loadOutletTransactionMonitor();
 }
 
 function showModuleTab(event, module, id) {
@@ -448,7 +455,8 @@ async function loadData() {
       loadChart(),
       loadTopProduk(),
       loadTopOutlet(),
-      loadOutletStatus()
+      loadOutletStatus(),
+      loadOutletTransactionMonitor(false)
     ]);
   } catch (error) {
     console.error("Load data error:", error);
@@ -456,6 +464,118 @@ async function loadData() {
   } finally {
     hideLoader();
   }
+}
+
+async function loadOutletTransactionMonitor(showSpinner = true) {
+  if (showSpinner) showLoader();
+
+  try {
+    const qs = getQueryParams();
+    const status = document.getElementById("outletTransactionStatus")?.value || "";
+    if (status) qs.set("status", status);
+    if (selectedSalesOutlet) qs.set("outlet", selectedSalesOutlet);
+
+    state.outletTransactions = toObject(await fetchJson(`/api/outlet-transaksi?${qs.toString()}`));
+    const outlets = toArray(state.outletTransactions.outlets);
+    const detail = toArray(state.outletTransactions.detail);
+    const selectedOutlet = state.outletTransactions.selected_outlet || selectedSalesOutlet || "";
+    selectedSalesOutlet = selectedOutlet;
+
+    const doneCount = outlets.filter(item => item.status_transaksi === "sudah").length;
+    const pendingCount = outlets.filter(item => item.status_transaksi === "belum").length;
+    const selectedRow = outlets.find(item => item.nama_outlet === selectedOutlet);
+    const selectedStock = detail.reduce((sum, item) => sum + Number(item.stok_akhir || 0), 0);
+
+    setText("sales_outlet_done", formatNumber(doneCount));
+    setText("sales_outlet_pending", formatNumber(pendingCount));
+    setText("sales_outlet_selected", selectedOutlet || "-");
+    setText("sales_outlet_stock", formatNumber(selectedStock));
+
+    renderOutletTransactionTable(outlets, selectedOutlet);
+    renderOutletTransactionDetail(detail, selectedRow);
+  } catch (error) {
+    console.error("Outlet transaction monitor error:", error);
+    showToast(error.message || "Gagal memuat transaksi outlet", false);
+  } finally {
+    if (showSpinner) hideLoader();
+  }
+}
+
+function renderOutletTransactionTable(outlets, selectedOutlet) {
+  const body = document.getElementById("outletTransactionBody");
+  if (!body) return;
+  body.innerHTML = "";
+
+  if (!outlets.length) {
+    body.innerHTML = `<tr><td colspan="5">Tidak ada data outlet untuk periode ini.</td></tr>`;
+    return;
+  }
+
+  outlets.forEach(item => {
+    const statusClass = item.status_transaksi === "sudah" ? "status-safe" : "status-out";
+    const isActive = item.nama_outlet === selectedOutlet ? "row-selected" : "";
+    body.innerHTML += `
+      <tr class="${isActive}" onclick="selectSalesOutlet('${escapeHtml(item.nama_outlet)}')">
+        <td>${escapeHtml(item.nama_outlet)}</td>
+        <td><span class="status-badge ${statusClass}">${item.status_transaksi === "sudah" ? "Sudah" : "Belum"}</span></td>
+        <td>${formatNumber(item.qty_transaksi)}</td>
+        <td>${formatNumber(item.stok_akhir)}</td>
+        <td>${escapeHtml(item.catatan || "-")}</td>
+      </tr>
+    `;
+  });
+}
+
+function renderOutletTransactionDetail(detail, selectedRow) {
+  const title = document.getElementById("outletDetailTitle");
+  const summary = document.getElementById("outletDetailSummary");
+  const body = document.getElementById("outletTransactionDetailBody");
+  if (!title || !summary || !body) return;
+
+  if (!selectedRow) {
+    title.textContent = "Pilih outlet";
+    summary.innerHTML = `
+      <h4>Belum ada outlet dipilih</h4>
+      <p>Klik salah satu outlet untuk melihat detail stok dan alasan kenapa outlet tersebut sudah atau belum transaksi pada periode ini.</p>
+    `;
+    body.innerHTML = `<tr><td colspan="8">Belum ada detail outlet dipilih.</td></tr>`;
+    return;
+  }
+
+  title.textContent = selectedRow.nama_outlet;
+  summary.innerHTML = `
+    <h4>Status ${selectedRow.status_transaksi === "sudah" ? "Sudah Transaksi" : "Belum Transaksi"}</h4>
+    <p>${escapeHtml(selectedRow.catatan || "-")}</p>
+  `;
+
+  body.innerHTML = "";
+  if (!detail.length) {
+    body.innerHTML = `<tr><td colspan="8">Belum ada detail stok outlet pada periode ini.</td></tr>`;
+    return;
+  }
+
+  detail.forEach(item => {
+    const stock = Number(item.stok_akhir || 0);
+    const stockClass = stock <= 0 ? "status-out" : stock <= 10 ? "status-low" : "status-safe";
+    const stockLabel = stock <= 0 ? "Habis" : stock <= 10 ? "Menipis" : "Masih Ada";
+    body.innerHTML += `
+      <tr>
+        <td>${escapeHtml(item.sku)}</td>
+        <td>${escapeHtml(item.nama_produk)}</td>
+        <td>${formatNumber(item.opening_stok)}</td>
+        <td>${formatNumber(item.stok_masuk)}</td>
+        <td>${formatNumber(item.stok_keluar)}</td>
+        <td>${formatNumber(item.penyesuaian)}</td>
+        <td>${formatNumber(stock)}</td>
+        <td><span class="status-badge ${stockClass}">${stockLabel}</span></td>
+      </tr>
+    `;
+  });
+}
+
+function selectSalesOutlet(outletName) {
+  selectedSalesOutlet = outletName;
+  loadOutletTransactionMonitor();
 }
 
 async function loadKPI() {

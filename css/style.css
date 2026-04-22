@@ -433,6 +433,10 @@ button:hover {
   background: #fff4ee;
 }
 
+.table tbody tr.row-selected {
+  background: #fff0e8;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
