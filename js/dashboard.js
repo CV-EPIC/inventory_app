@@ -1007,12 +1007,26 @@ async function loadForecast() {
     recommendationCards.innerHTML = "";
 
     let totalForecast = 0;
+    let totalActual = 0;
+    let totalGap = 0;
     let produkAktif = 0;
+    let accuracyTotal = 0;
+    let accuracyCount = 0;
 
     state.forecast.forEach(item => {
       const forecast = Number(item.forecast_bulan_depan || 0);
+      const actual = Number(item.bulan_3 || 0);
+      const gap = forecast - actual;
       totalForecast += forecast;
+      totalActual += actual;
+      totalGap += gap;
       if (forecast > 0) produkAktif += 1;
+
+      const accuracy = getForecastAccuracy(forecast, actual);
+      if (accuracy !== null) {
+        accuracyTotal += accuracy;
+        accuracyCount += 1;
+      }
 
       body.innerHTML += `
         <tr>
@@ -1031,6 +1045,10 @@ async function loadForecast() {
     const topDemand = sorted[0];
 
     setText("forecast_total_produk", formatNumber(state.forecast.length));
+    setText("forecast_total_value", formatNumber(totalForecast));
+    setText("forecast_actual_value", formatNumber(totalActual));
+    setText("forecast_gap_value", formatNumber(totalGap));
+    setText("forecast_accuracy", `${formatForecastPercentage(accuracyCount ? accuracyTotal / accuracyCount : 0)}%`);
     setText("forecast_avg_tahunan", formatNumber(state.forecast.length ? Math.ceil(totalForecast / state.forecast.length) : 0));
     setText("forecast_top_demand", topDemand ? topDemand.nama_produk : "-");
     setText("forecast_produk_aktif", formatNumber(produkAktif));
@@ -1058,6 +1076,24 @@ async function loadForecast() {
   } finally {
     hideLoader();
   }
+}
+
+function getForecastAccuracy(forecast, actual) {
+  const safeForecast = Number(forecast || 0);
+  const safeActual = Number(actual || 0);
+
+  if (safeForecast === 0 && safeActual === 0) return 100;
+  if (safeActual === 0) return 0;
+
+  const accuracy = 100 - (Math.abs(safeForecast - safeActual) / safeActual) * 100;
+  return Math.max(0, Math.min(100, accuracy));
+}
+
+function formatForecastPercentage(value) {
+  return Number(value || 0).toLocaleString("id-ID", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
 }
 
 function getOpnameCategory(namaProduk = "") {
